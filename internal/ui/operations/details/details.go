@@ -132,16 +132,35 @@ func (s *Operation) internalUpdate(msg tea.Msg) (*Operation, tea.Cmd) {
 				output, _ := s.context.RunCommandImmediate(jj.Diff(s.revision.GetChangeId(), selected.fileName))
 				return common.ShowDiffMsg(output)
 			}
-		case key.Matches(msg, s.keyMap.Details.Split, s.keyMap.Details.SplitParallel):
-			isParallel := key.Matches(msg, s.keyMap.Details.SplitParallel)
+		case key.Matches(msg, s.keyMap.Details.Split):
 			selectedFiles := s.getSelectedFiles()
+			selected := s.current()
 			s.selectedHint = "stays as is"
 			s.unselectedHint = "moves to the new revision"
 			model := confirmation.New(
 				[]string{"Are you sure you want to split the selected files?"},
 				confirmation.WithStylePrefix("revisions"),
 				confirmation.WithOption("Yes",
-					tea.Batch(s.context.RunInteractiveCommand(jj.Split(s.revision.GetChangeId(), selectedFiles, isParallel), common.Refresh), common.Close),
+					tea.Batch(s.context.RunInteractiveCommand(jj.Split(s.revision.GetChangeId(), selectedFiles, false), common.Refresh), common.Close),
+					key.NewBinding(key.WithKeys("y"), key.WithHelp("y", "yes"))),
+				confirmation.WithOption("Interactive",
+					tea.Batch(s.context.RunInteractiveCommand(jj.SplitInteractive(s.revision.GetChangeId(), selected.fileName), common.Refresh), common.Close),
+					key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "interactive"))),
+				confirmation.WithOption("No",
+					confirmation.Close,
+					key.NewBinding(key.WithKeys("n", "esc"), key.WithHelp("n/esc", "no"))),
+			)
+			s.confirmation = model
+			return s, s.confirmation.Init()
+		case key.Matches(msg, s.keyMap.Details.SplitParallel):
+			selectedFiles := s.getSelectedFiles()
+			s.selectedHint = "stays as is"
+			s.unselectedHint = "moves to the new revision"
+			model := confirmation.New(
+				[]string{"Are you sure you want to split the selected files in parallel?"},
+				confirmation.WithStylePrefix("revisions"),
+				confirmation.WithOption("Yes",
+					tea.Batch(s.context.RunInteractiveCommand(jj.Split(s.revision.GetChangeId(), selectedFiles, true), common.Refresh), common.Close),
 					key.NewBinding(key.WithKeys("y"), key.WithHelp("y", "yes"))),
 				confirmation.WithOption("No",
 					confirmation.Close,
@@ -155,6 +174,7 @@ func (s *Operation) internalUpdate(msg tea.Msg) (*Operation, tea.Cmd) {
 			}
 		case key.Matches(msg, s.keyMap.Details.Restore):
 			selectedFiles := s.getSelectedFiles()
+			selected := s.current()
 			s.selectedHint = "gets restored"
 			s.unselectedHint = "stays as is"
 			model := confirmation.New(
@@ -163,6 +183,9 @@ func (s *Operation) internalUpdate(msg tea.Msg) (*Operation, tea.Cmd) {
 				confirmation.WithOption("Yes",
 					s.context.RunCommand(jj.Restore(s.revision.GetChangeId(), selectedFiles), common.Refresh, confirmation.Close),
 					key.NewBinding(key.WithKeys("y"), key.WithHelp("y", "yes"))),
+				confirmation.WithOption("Interactive",
+					tea.Batch(s.context.RunInteractiveCommand(jj.RestoreInteractive(s.revision.GetChangeId(), selected.fileName), common.Refresh), common.Close),
+					key.NewBinding(key.WithKeys("i"), key.WithHelp("i", "interactive"))),
 				confirmation.WithOption("No",
 					confirmation.Close,
 					key.NewBinding(key.WithKeys("n", "esc"), key.WithHelp("n/esc", "no"))),

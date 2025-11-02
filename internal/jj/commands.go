@@ -82,6 +82,14 @@ func Split(revision string, files []string, parallel bool) CommandArgs {
 	return args
 }
 
+func SplitInteractive(revision string, file string) CommandArgs {
+	args := []string{"split", "-r", revision, "--interactive"}
+	if file != "" {
+		args = append(args, EscapeFileName(file))
+	}
+	return args
+}
+
 func SquashFiles(from string, into string, files []string) CommandArgs {
 	args := []string{"squash", "--from", from, "--into", into, "--use-destination-message"}
 	var escapedFiles []string
@@ -133,6 +141,14 @@ func Restore(revision string, files []string) CommandArgs {
 		escapedFiles = append(escapedFiles, EscapeFileName(file))
 	}
 	args = append(args, escapedFiles...)
+	return args
+}
+
+func RestoreInteractive(revision string, file string) CommandArgs {
+	args := []string{"restore", "-c", revision, "--interactive"}
+	if file != "" {
+		args = append(args, EscapeFileName(file))
+	}
 	return args
 }
 
